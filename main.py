@@ -23,7 +23,7 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 
 # Configure database
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:3184156@localhost:3306/mydb"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://gelirgider:GucluBirSifre123!@localhost/gelirgiderdb"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 migrate = Migrate(app, db)
