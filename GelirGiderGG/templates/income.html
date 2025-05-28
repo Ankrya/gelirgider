@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Gelirler - Kişisel Finans Asistanı{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">
+                    <i class="fas fa-plus-circle text-primary me-2"></i>Yeni Gelir Ekle
+                </h4>
+                <form method="POST" action="{{ url_for('income') }}">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Açıklama</label>
+                        <input type="text" id="description" name="description" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Miktar</label>
+                        <div class="input-group">
+                            <input type="number" id="amount" name="amount" step="0.01" class="form-control" required>
+                            <span class="input-group-text">₺</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Tarih</label>
+                        <input type="date" id="date" name="date" class="form-control" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="category" class="form-label">Kategori (Opsiyonel)</label>
+                        <input type="text" id="category" name="category" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <i class="fas fa-save me-2"></i>Gelir Ekle
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <form method="GET" action="{{ url_for('income') }}" class="mb-4" onsubmit="return false;">
+            <div class="input-group">
+                <input type="text" id="live-search-incomes" name="q" class="form-control" placeholder="Açıklamaya göre gelir ara..." autofocus autocomplete="off">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Ara</button>
+            </div>
+        </form>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">
+                    <i class="fas fa-list text-primary me-2"></i>Gelir Listesi
+                </h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="income-table">
+                        <thead>
+                            <tr>
+                                <th>Açıklama</th>
+                                <th>Miktar</th>
+                                <th>Tarih</th>
+                                <th>Kategori</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="income-table-body">
+                            {% for income in incomes %}
+                            <tr>
+                                <td>{{ income.description }}</td>
+                                <td class="fw-bold text-success">{{ "%.2f"|format(income.amount) }} ₺</td>
+                                <td>{{ income.date.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    {% if income.category %}
+                                    <span class="badge bg-info">{{ income.category }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_income', income_id=income.id) }}" class="btn btn-sm btn-primary">Düzenle</a>
+                                    <form action="{{ url_for('delete_income', income_id=income.id) }}" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bu geliri silmek istediğinizden emin misiniz?');">Sil</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-result-message-incomes" class="alert alert-warning text-center mb-0 d-none">
+                    <i class="fas fa-exclamation-circle me-2"></i> Aradığınız gelir bulunamadı.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<script>
+// Döviz kuru ile TL karşılığını otomatik göster
+async function updateTLEquivalent() {
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const currency = document.getElementById('currency').value;
+    if (currency === 'TRY' || !amount) {
+        document.getElementById('tl-equivalent-group').style.display = 'none';
+        return;
+    }
+    document.getElementById('tl-equivalent-group').style.display = '';
+    document.getElementById('tl-equivalent').value = 'Hesaplanıyor...';
+    try {
+        const resp = await fetch(`https://doviz.dev/v1/${currency.toLowerCase()}.json`);
+        const data = await resp.json();
+        const key = currency.toUpperCase() + 'TRY';
+        const rate = data[key] || 1.0;
+        document.getElementById('tl-equivalent').value = (amount * rate).toFixed(2) + ' ₺';
+    } catch {
+        document.getElementById('tl-equivalent').value = 'Kur alınamadı';
+    }
+}
+document.getElementById('currency').addEventListener('change', updateTLEquivalent);
+document.getElementById('amount').addEventListener('input', updateTLEquivalent);
+
+const searchInputIncomes = document.getElementById('live-search-incomes');
+const tableBodyIncomes = document.getElementById('income-table-body');
+const noResultIncomes = document.getElementById('no-result-message-incomes');
+
+searchInputIncomes.addEventListener('input', function() {
+    const q = this.value;
+    fetch(`/api/incomes/search?q=${encodeURIComponent(q)}`)
+        .then(res => res.json())
+        .then(data => {
+            tableBodyIncomes.innerHTML = '';
+            if (data.length === 0) {
+                noResultIncomes.classList.remove('d-none');
+            } else {
+                noResultIncomes.classList.add('d-none');
+                data.forEach(income => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${income.description}</td>
+                        <td class="fw-bold text-success">${income.amount.toFixed(2)} ₺</td>
+                        <td>${income.date}</td>
+                        <td>${income.category ? `<span class='badge bg-info'>${income.category}</span>` : '<span class="text-muted">-</span>'}</td>
+                        <td>
+                            <a href="/edit_income/${income.id}" class="btn btn-sm btn-primary">Düzenle</a>
+                            <form action="/delete_income/${income.id}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                            </form>
+                        </td>
+                    `;
+                    tableBodyIncomes.appendChild(row);
+                });
+            }
+        });
+});
+</script>

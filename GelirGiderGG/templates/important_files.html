@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Önemli Dosyalar - GelirGiderGG{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9 col-12">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <h3 class="fw-bold mb-3"><i class="fas fa-folder-open text-primary me-2"></i> Önemli Dosyalar</h3>
+          <form method="POST" enctype="multipart/form-data" class="mb-4">
+            <div class="mb-3">
+              <label for="file" class="form-label">Dosya Yükle (Sadece doküman dosyaları, max 10MB)</label>
+              <input type="file" id="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.odt" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Yükle</button>
+          </form>
+          {% if files and files|length > 0 %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Dosya Adı</th>
+                  <th>Yüklenme Tarihi</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for file in files %}
+                <tr>
+                  <td>{{ file.filename }}</td>
+                  <td>{{ file.upload_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                  <td>
+                    <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-download"></i> İndir</a>
+                    <form method="POST" action="{{ url_for('delete_file', file_id=file.id) }}" style="display:inline;">
+                      <button type="submit" class="btn btn-sm btn-outline-danger ms-2" onclick="return confirm('Bu dosyayı silmek istediğinizden emin misiniz?');"><i class="fas fa-trash"></i> Sil</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">Henüz dosya eklenmemiş.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - GelirGiderGG{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1400px;">
+    <!-- Dashboard Başlık -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold" style="color:#222; font-size:2rem;">Ana Sayfa</h2>
+        </div>
+    </div>
+    <!-- Filtre Butonları -->
+    <div class="d-flex justify-content-end mb-3">
+        <form method="get" id="dateFilterForm">
+            <div class="btn-group" role="group">
+                <button type="submit" name="range" value="today" class="btn btn-outline-primary {% if range == 'today' %}active{% endif %}">Bugün</button>
+                <button type="submit" name="range" value="week" class="btn btn-outline-primary {% if range == 'week' %}active{% endif %}">Son 7 Gün</button>
+                <button type="submit" name="range" value="month" class="btn btn-outline-primary {% if range == 'month' %}active{% endif %}">Bu Ay</button>
+                <button type="submit" name="range" value="all" class="btn btn-outline-primary {% if range == 'all' or not range %}active{% endif %}">Tüm Zamanlar</button>
+            </div>
+        </form>
+    </div>
+    <!-- Özet Kutuları -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#e0f7fa,#e3f2fd);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#00bcd4;"><i class="fas fa-users"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Toplam Müşteri</div>
+                    <div class="fs-5 fw-bold">{{ total_customers }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#e0f7fa,#e3f2fd);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#00bcd4;"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Toplam Satış</div>
+                    <div class="fs-5 fw-bold">{{ '%.2f'|format(total_sales) }} ₺</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#ffebee,#fff3e0);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#e53935;"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Toplam Gider</div>
+                    <div class="fs-5 fw-bold">{{ '%.2f'|format(total_expenses) }} ₺</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#43a047;"><i class="fas fa-wallet"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Net Durum</div>
+                    <div class="fs-5 fw-bold">{{ '%.2f'|format(total_sales - total_expenses) }} ₺</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#f3e5f5,#ede7f6);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#ab47bc;"><i class="fas fa-box"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Toplam Paket</div>
+                    <div class="fs-5 fw-bold">{{ total_packages }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 h-100" style="background:linear-gradient(135deg,#e1f5fe,#fce4ec);">
+                <div class="card-body text-center">
+                    <div class="mb-2" style="font-size:2rem;color:#29b6f6;"><i class="fas fa-chart-line"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">Toplam Yatırım</div>
+                    <div class="fs-5 fw-bold">{{ total_investments }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Yaklaşan ve Gelecek Ödemeler -->
+    <div class="row mb-4">
+        <div class="col-12 col-lg-6 mb-3 mb-lg-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3" style="color:#377dff;"><i class="fas fa-bell"></i> Yaklaşan Ödemeler</h5>
+                    {% if not upcoming_bills and not upcoming_expenses %}
+                        <div class="text-success"><i class="fas fa-check-circle"></i> Yaklaşan ödemeniz yok.</div>
+                    {% else %}
+                        <ul class="list-group list-group-flush">
+                            {% for bill in upcoming_bills %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-file-invoice text-primary me-2"></i> {{ bill.description }} (Fatura)</span>
+                                <span>{{ bill.due_date.strftime('%d.%m.%Y') }} - {{ '%.2f'|format(bill.amount) }} ₺</span>
+                            </li>
+                            {% endfor %}
+                            {% for exp in upcoming_expenses %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-minus-circle text-danger me-2"></i> {{ exp.description }} (Gider)</span>
+                                <span>{{ exp.date.strftime('%d.%m.%Y') }} - {{ '%.2f'|format(exp.amount) }} ₺</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3" style="color:#43a047;"><i class="fas fa-calendar-plus"></i> Gelecek Ödemeler</h5>
+                    {% if not upcoming_sales %}
+                        <div class="text-success"><i class="fas fa-check-circle"></i> Gelecek ödemeleriniz yok.</div>
+                    {% else %}
+                        <ul class="list-group list-group-flush">
+                            {% for sale in upcoming_sales %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-shopping-cart text-info me-2"></i> {{ sale.package.name if sale.package else 'Satış' }} (Satış)</span>
+                                <span>{{ sale.sale_date.strftime('%d.%m.%Y') }} - {{ '%.2f'|format(sale.amount) }} ₺</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modern Kartlar (Mevcut içerik korunarak) -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-users"></i></div>
+                <div class="fw-bold">Müşteriler</div>
+                <div class="small mb-2">Müşteri bilgilerinizi ekleyin ve yönetin.</div>
+                <a href="{{ url_for('customers') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Müşterilere Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-box"></i></div>
+                <div class="fw-bold">Satış Paketleri</div>
+                <div class="small mb-2">Satış paketlerinizi oluşturun ve düzenleyin.</div>
+                <a href="{{ url_for('sales_packages') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Paketlere Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-shopping-cart"></i></div>
+                <div class="fw-bold">Satışlar</div>
+                <div class="small mb-2">Satışlarınızı kaydedin ve takip edin.</div>
+                <a href="{{ url_for('sales') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Satışlara Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-chart-bar"></i></div>
+                <div class="fw-bold">Raporlar</div>
+                <div class="small mb-2">Finansal durumunuzu analiz edin.</div>
+                <a href="{{ url_for('reports') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Raporlara Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-minus-circle"></i></div>
+                <div class="fw-bold">Giderler</div>
+                <div class="small mb-2">Giderlerinizi kaydedin ve takip edin.</div>
+                <a href="{{ url_for('expenses') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Giderlere Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-file-invoice"></i></div>
+                <div class="fw-bold">Faturalar</div>
+                <div class="small mb-2">Faturalarınızı kaydedin ve takip edin.</div>
+                <a href="{{ url_for('bills') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Faturalara Git</a>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center p-3">
+                <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="fas fa-chart-line"></i></div>
+                <div class="fw-bold">Yatırımlar</div>
+                <div class="small mb-2">Yatırımlarınızı kaydedin ve takip edin.</div>
+                <a href="{{ url_for('investments') }}" class="text-decoration-none text-primary"><i class="fas fa-arrow-right"></i> Yatırımlara Git</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
